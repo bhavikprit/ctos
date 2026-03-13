@@ -70,37 +70,66 @@ const ROLE_CONFIG: Record<string, { icon: any; color: string; bg: string; label:
   },
 };
 
+const FALLBACK_USERS: UserCard[] = [
+  { id: "u1", name: "Sarah Chen", email: "admin@ctos.dev", role: "ADMIN" },
+  { id: "u2", name: "James Morrison", email: "terminal.mgr@ctos.dev", role: "TERMINAL_MANAGER" },
+  { id: "u3", name: "Maria Santos", email: "ops.mgr@ctos.dev", role: "OPERATIONS_MANAGER" },
+  { id: "u4", name: "David Kim", email: "planner@ctos.dev", role: "PLANNER" },
+  { id: "u5", name: "Alex Thompson", email: "field.ops@ctos.dev", role: "FIELD_OPERATOR" },
+  { id: "u6", name: "Rachel Green", email: "viewer@ctos.dev", role: "VIEWER" },
+];
+
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuthStore();
   const [users, setUsers] = useState<UserCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [loggingIn, setLoggingIn] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
     fetch(`${API_URL}/auth/users`)
       .then((res) => res.json())
       .then((data) => {
-        setUsers(data);
+        setUsers(Array.isArray(data) ? data : FALLBACK_USERS);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setUsers(FALLBACK_USERS);
+        setIsOffline(true);
+        setLoading(false);
+      });
   }, []);
 
-  const handleLogin = async (userId: string) => {
-    setLoggingIn(userId);
+  const handleLogin = async (user: UserCard) => {
+    setLoggingIn(user.id);
     try {
+      if (isOffline) {
+        // Client-side login for demo/offline mode
+        const fakeToken = `demo-token-${user.id}`;
+        login({ id: user.id, name: user.name, email: user.email, role: user.role }, fakeToken);
+        localStorage.setItem("ctos_user", JSON.stringify({ id: user.id, name: user.name, email: user.email, role: user.role }));
+        localStorage.setItem("ctos_token", fakeToken);
+        router.push("/dashboard");
+        return;
+      }
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId: user.id }),
       });
       const data = await res.json();
       login(data.user, data.token);
+      localStorage.setItem("ctos_user", JSON.stringify(data.user));
+      localStorage.setItem("ctos_token", data.token);
       router.push("/dashboard");
     } catch (error) {
-      console.error("Login failed:", error);
-      setLoggingIn(null);
+      // Fall back to offline login if API fails
+      const fakeToken = `demo-token-${user.id}`;
+      login({ id: user.id, name: user.name, email: user.email, role: user.role }, fakeToken);
+      localStorage.setItem("ctos_user", JSON.stringify({ id: user.id, name: user.name, email: user.email, role: user.role }));
+      localStorage.setItem("ctos_token", fakeToken);
+      router.push("/dashboard");
     }
   };
 
@@ -148,7 +177,7 @@ export default function LoginPage() {
             return (
               <button
                 key={user.id}
-                onClick={() => handleLogin(user.id)}
+                onClick={() => handleLogin(user)}
                 disabled={loggingIn !== null}
                 className={`group relative flex flex-col p-5 rounded-xl border backdrop-blur-sm transition-all duration-300 text-left ${config.bg} ${
                   isActive ? "scale-[0.98] opacity-80" : "hover:scale-[1.02] hover:shadow-lg"
