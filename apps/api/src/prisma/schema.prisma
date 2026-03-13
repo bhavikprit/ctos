@@ -1,0 +1,685 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  ADMIN
+  TERMINAL_MANAGER
+  OPERATIONS_MANAGER
+  PLANNER
+  FIELD_OPERATOR
+  VIEWER
+}
+
+enum TransferType {
+  SHIP_TO_TANK
+  TANK_TO_SHIP
+  TANK_TO_TANK
+  TANK_TO_TRUCK
+  TANK_TO_IBC
+  CROSS_TERMINAL
+  IBC_TO_TRUCK
+}
+
+enum TransferStatus {
+  PLANNED
+  AWAITING_CHECKLIST
+  READY
+  IN_PROGRESS
+  PAUSED
+  COMPLETING
+  PENDING_CLOSURE
+  COMPLETED
+  TERMINATED
+}
+
+enum VesselCallStatus {
+  SCHEDULED
+  ARRIVED
+  BERTHED
+  OPERATIONS
+  COMPLETED
+  DEPARTED
+}
+
+enum ParcelStatus {
+  NOMINATED
+  ALLOCATED
+  TRANSFERRING
+  COMPLETED
+  CANCELLED
+}
+
+enum TankStatus {
+  AVAILABLE
+  ALLOCATED
+  IN_USE
+  CLEANING
+  MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+enum ValveState {
+  OPEN
+  CLOSED
+  LOCKED
+}
+
+enum PumpStatus {
+  STOPPED
+  RUNNING
+  FAULT
+}
+
+enum ChecklistItemStatus {
+  PENDING
+  COMPLIANT
+  NON_COMPLIANT
+  NOT_APPLICABLE
+}
+
+enum StopReason {
+  LEAK_DETECTED
+  EQUIPMENT_FAULT
+  SAFETY_CONCERN
+  VESSEL_REQUEST
+  OTHER
+}
+
+enum SampleType {
+  COMPOSITE
+  SPOT
+  DRIP
+}
+
+enum SampleStatus {
+  PENDING
+  PASSED
+  FAILED
+}
+
+enum EventType {
+  TRANSFER_CREATED
+  TRANSFER_STARTED
+  TRANSFER_PAUSED
+  TRANSFER_RESUMED
+  TRANSFER_COMPLETED
+  TRANSFER_TERMINATED
+  FLOW_RATE_CHANGE
+  ULLAGE_READING
+  SHIP_FIGURE_RECORDED
+  ALARM_TRIGGERED
+  ALARM_ACKNOWLEDGED
+  VALVE_CHANGE
+  DOCUMENT_UPLOADED
+  CHECKLIST_COMPLETED
+  CHECKLIST_SIGNED
+  CERTIFICATE_GENERATED
+  CERTIFICATE_SIGNED
+  VARIANCE_ALERT
+  EMERGENCY_STOP
+  ROUTE_CONFIRMED
+  COMMUNICATION
+}
+
+enum VarianceCategory {
+  METER_FAULT
+  DENSITY_DIFFERENCE
+  TEMPERATURE_CORRECTION
+  SAMPLING_DISCREPANCY
+  VESSEL_ERROR
+  OTHER
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      UserRole
+  avatarUrl String?
+  terminalId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  terminal   Terminal? @relation(fields: [terminalId], references: [id])
+
+  // Relations
+  transferEvents  TransferEvent[]
+  ullageReadings  UllageReading[]
+  communications  Communication[]
+  sampleRecords   SampleRecord[]
+
+  @@map("users")
+}
+
+// ============================================================
+// TERMINAL INFRASTRUCTURE
+// ============================================================
+
+model Terminal {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  location    String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Infrastructure
+  tanks       Tank[]
+  berths      Berth[]
+  pipelines   Pipeline[]
+  pumps       Pump[]
+  valves      Valve[]
+  users       User[]
+  vesselCalls VesselCall[]
+  templates   TransferTemplate[]
+  products    Product[]
+
+  @@map("terminals")
+}
+
+model Product {
+  id              String  @id @default(cuid())
+  name            String
+  code            String
+  color           String  // Hex color for diagram
+  density         Float?  // kg/m3 at 15°C
+  flashPoint      Float?  // °C
+  maxTemp         Float?  // °C max safe handling temp
+  minTemp         Float?  // °C min safe handling temp
+  vocRegulated    Boolean @default(false)
+  hazardClass     String?
+  terminalId      String
+  createdAt       DateTime @default(now())
+
+  terminal        Terminal @relation(fields: [terminalId], references: [id])
+  parcels         Parcel[]
+  tankProducts    TankProduct[]
+
+  @@unique([code, terminalId])
+  @@map("products")
+}
+
+model Tank {
+  id              String     @id @default(cuid())
+  name            String
+  code            String
+  capacityM3      Float
+  currentLevelM3  Float      @default(0)
+  status          TankStatus @default(AVAILABLE)
+  tankType        String?    // fixed roof, floating roof, etc.
+  heated          Boolean    @default(false)
+  temperatureC    Float?
+  hlaM3           Float      // High Level Alarm threshold
+  hhlaM3          Float      // High-High Level Alarm threshold
+  positionX       Float?     // For diagram positioning
+  positionY       Float?
+  terminalId      String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  terminal        Terminal   @relation(fields: [terminalId], references: [id])
+  compatibleProducts TankProduct[]
+  ullageReadings  UllageReading[]
+
+  @@unique([code, terminalId])
+  @@map("tanks")
+}
+
+model TankProduct {
+  id        String  @id @default(cuid())
+  tankId    String
+  productId String
+  tank      Tank    @relation(fields: [tankId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@unique([tankId, productId])
+  @@map("tank_products")
+}
+
+model Berth {
+  id          String   @id @default(cuid())
+  name        String
+  code        String
+  maxDraft    Float?   // meters
+  maxLOA      Float?   // Length Overall in meters
+  positionX   Float?
+  positionY   Float?
+  terminalId  String
+  createdAt   DateTime @default(now())
+
+  terminal    Terminal    @relation(fields: [terminalId], references: [id])
+  vesselCalls VesselCall[]
+
+  @@unique([code, terminalId])
+  @@map("berths")
+}
+
+model Pipeline {
+  id          String            @id @default(cuid())
+  name        String
+  code        String
+  diameterMm  Float
+  lengthM     Float
+  maxFlowRate Float             // m3/h
+  terminalId  String
+  createdAt   DateTime          @default(now())
+
+  terminal    Terminal          @relation(fields: [terminalId], references: [id])
+  segments    PipelineSegment[]
+
+  @@unique([code, terminalId])
+  @@map("pipelines")
+}
+
+model PipelineSegment {
+  id             String   @id @default(cuid())
+  pipelineId     String
+  fromNodeType   String   // "tank", "berth", "valve", "pump", "junction"
+  fromNodeId     String
+  toNodeType     String
+  toNodeId       String
+  lengthM        Float
+  maintenance    Boolean  @default(false)
+  positionStartX Float?
+  positionStartY Float?
+  positionEndX   Float?
+  positionEndY   Float?
+
+  pipeline       Pipeline      @relation(fields: [pipelineId], references: [id])
+  flowReadings   FlowReading[]
+
+  @@map("pipeline_segments")
+}
+
+model Valve {
+  id         String     @id @default(cuid())
+  name       String
+  code       String
+  state      ValveState @default(CLOSED)
+  positionX  Float?
+  positionY  Float?
+  terminalId String
+  createdAt  DateTime   @default(now())
+
+  terminal   Terminal   @relation(fields: [terminalId], references: [id])
+
+  @@unique([code, terminalId])
+  @@map("valves")
+}
+
+model Pump {
+  id          String     @id @default(cuid())
+  name        String
+  code        String
+  status      PumpStatus @default(STOPPED)
+  maxFlowRate Float?     // m3/h
+  positionX   Float?
+  positionY   Float?
+  terminalId  String
+  createdAt   DateTime   @default(now())
+
+  terminal    Terminal   @relation(fields: [terminalId], references: [id])
+
+  @@unique([code, terminalId])
+  @@map("pumps")
+}
+
+// ============================================================
+// VESSEL & PARCELS
+// ============================================================
+
+model VesselCall {
+  id           String           @id @default(cuid())
+  vesselName   String
+  imoNumber    String?
+  eta          DateTime
+  ata          DateTime?        // Actual time of arrival
+  atd          DateTime?        // Actual time of departure
+  agent        String?
+  status       VesselCallStatus @default(SCHEDULED)
+  berthId      String?
+  terminalId   String
+  notes        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  berth        Berth?           @relation(fields: [berthId], references: [id])
+  terminal     Terminal         @relation(fields: [terminalId], references: [id])
+  parcels      Parcel[]
+  documents    Document[]
+
+  @@map("vessel_calls")
+}
+
+model Parcel {
+  id              String       @id @default(cuid())
+  vesselCallId    String
+  productId       String
+  nominatedVolume Float        // m3
+  owner           String?      // Customer name
+  qualitySpec     String?
+  tempRequirement Float?       // °C
+  status          ParcelStatus @default(NOMINATED)
+  allocatedTankId String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  vesselCall      VesselCall       @relation(fields: [vesselCallId], references: [id])
+  product         Product          @relation(fields: [productId], references: [id])
+  transferRecords TransferRecord[]
+
+  @@map("parcels")
+}
+
+model Document {
+  id           String   @id @default(cuid())
+  vesselCallId String
+  name         String
+  type         String   // BOL, NOR, manifest, etc.
+  fileUrl      String
+  uploadedAt   DateTime @default(now())
+
+  vesselCall   VesselCall @relation(fields: [vesselCallId], references: [id])
+
+  @@map("documents")
+}
+
+// ============================================================
+// TRANSFERS
+// ============================================================
+
+model TransferRecord {
+  id             String         @id @default(cuid())
+  transferNumber String         @unique // e.g. "TRF-2024-001"
+  parcelId       String?
+  type           TransferType
+  status         TransferStatus @default(PLANNED)
+  sourceType     String         // "tank", "vessel", "ibc"
+  sourceId       String
+  destType       String         // "tank", "truck", "vessel", "ibc"
+  destId         String
+  plannedVolume  Float
+  actualVolume   Float?
+  flowRateM3h    Float?         // current flow rate
+  startTime      DateTime?
+  endTime        DateTime?
+  terminalId     String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  parcel         Parcel?        @relation(fields: [parcelId], references: [id])
+
+  route             TransferRoute?
+  events            TransferEvent[]
+  ullageReadings    UllageReading[]
+  shipFigures       ShipFigure[]
+  flowReadings      FlowReading[]
+  isgottChecklist   IsgottChecklist?
+  shoreConnections  ShoreConnection[]
+  sampleRecords     SampleRecord[]
+  certificate       QuantityCertificate?
+  variance          TransferVariance?
+  communications    Communication[]
+
+  @@map("transfer_records")
+}
+
+model TransferRoute {
+  id                String   @id @default(cuid())
+  transferId        String   @unique
+  pipelineSegmentIds String[] // Array of segment IDs
+  pumpIds           String[] // Array of pump IDs
+  valveLineup       Json?   // { valveId: "OPEN" | "CLOSED" }
+  confirmed         Boolean  @default(false)
+  confirmedBy       String?
+  confirmedAt       DateTime?
+
+  transfer          TransferRecord @relation(fields: [transferId], references: [id])
+
+  @@map("transfer_routes")
+}
+
+model TransferEvent {
+  id         String    @id @default(cuid())
+  transferId String
+  eventType  EventType
+  timestamp  DateTime  @default(now())
+  userId     String?
+  value      String?   // Event-specific data (JSON string)
+  notes      String?
+
+  transfer   TransferRecord @relation(fields: [transferId], references: [id])
+  user       User?          @relation(fields: [userId], references: [id])
+
+  @@index([transferId, timestamp])
+  @@map("transfer_events")
+}
+
+// ============================================================
+// MONITORING & READINGS
+// ============================================================
+
+model UllageReading {
+  id          String   @id @default(cuid())
+  transferId  String
+  tankId      String
+  readingType String   // "opening", "current", "closing"
+  valueM3     Float
+  temperatureC Float?
+  observedBy  String
+  timestamp   DateTime @default(now())
+
+  transfer    TransferRecord @relation(fields: [transferId], references: [id])
+  tank        Tank           @relation(fields: [tankId], references: [id])
+  user        User           @relation(fields: [observedBy], references: [id])
+
+  @@index([transferId, timestamp])
+  @@map("ullage_readings")
+}
+
+model ShipFigure {
+  id         String   @id @default(cuid())
+  transferId String
+  reportedBy String
+  timestamp  DateTime @default(now())
+  volumeM3   Float
+  method     String?  // manual, integrated
+  notes      String?
+
+  transfer   TransferRecord @relation(fields: [transferId], references: [id])
+
+  @@index([transferId, timestamp])
+  @@map("ship_figures")
+}
+
+model FlowReading {
+  id                String   @id @default(cuid())
+  transferId        String
+  pipelineSegmentId String?
+  flowRateM3h       Float
+  timestamp         DateTime @default(now())
+
+  transfer          TransferRecord  @relation(fields: [transferId], references: [id])
+  pipelineSegment   PipelineSegment? @relation(fields: [pipelineSegmentId], references: [id])
+
+  @@index([transferId, timestamp])
+  @@map("flow_readings")
+}
+
+// ============================================================
+// SAFETY & CHECKLISTS
+// ============================================================
+
+model IsgottChecklist {
+  id                String              @id @default(cuid())
+  transferId        String              @unique
+  templateVersion   String              @default("ISGOTT 7th Edition")
+  terminalSignatory String?
+  vesselSignatory   String?
+  terminalSignedAt  DateTime?
+  vesselSignedAt    DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime            @default(now())
+
+  transfer          TransferRecord      @relation(fields: [transferId], references: [id])
+  items             IsgottChecklistItem[]
+
+  @@map("isgott_checklists")
+}
+
+model IsgottChecklistItem {
+  id           String              @id @default(cuid())
+  checklistId  String
+  section      String              // "A" or "B"
+  itemNumber   Int
+  description  String
+  status       ChecklistItemStatus @default(PENDING)
+  comment      String?             // mandatory if NON_COMPLIANT
+  checkedBy    String?
+  checkedAt    DateTime?
+
+  checklist    IsgottChecklist @relation(fields: [checklistId], references: [id])
+
+  @@unique([checklistId, section, itemNumber])
+  @@map("isgott_checklist_items")
+}
+
+model ShoreConnection {
+  id          String   @id @default(cuid())
+  transferId  String
+  hoseSerial  String
+  diameterMm  Float
+  maxPressure Float    // bar
+  testDate    DateTime?
+  testResult  String?  // "pass", "fail"
+  flangeConfig String?
+  photoUrl    String?
+  createdAt   DateTime @default(now())
+
+  transfer    TransferRecord @relation(fields: [transferId], references: [id])
+
+  @@map("shore_connections")
+}
+
+// ============================================================
+// SAMPLING & QUALITY
+// ============================================================
+
+model SampleRecord {
+  id           String       @id @default(cuid())
+  transferId   String
+  tankId       String?
+  drawnBy      String
+  drawnAt      DateTime     @default(now())
+  sampleType   SampleType
+  stage        String?      // "mid-transfer", "closing"
+  destination  String?      // lab name or "retained"
+  sealNumber   String?
+  labResult    Json?        // Product-specific parameters
+  status       SampleStatus @default(PENDING)
+
+  transfer     TransferRecord @relation(fields: [transferId], references: [id])
+  user         User           @relation(fields: [drawnBy], references: [id])
+
+  @@map("sample_records")
+}
+
+// ============================================================
+// CERTIFICATES & CLOSURE
+// ============================================================
+
+model QuantityCertificate {
+  id                String   @id @default(cuid())
+  transferId        String   @unique
+  grossVolumeM3     Float
+  netVolume15C      Float    // Corrected to 15°C
+  density           Float    // kg/m3
+  temperatureC      Float
+  trimCorrection    Float?
+  terminalSignatory String?
+  vesselSignatory   String?
+  signedAt          DateTime?
+  pdfUrl            String?
+  createdAt         DateTime @default(now())
+
+  transfer          TransferRecord @relation(fields: [transferId], references: [id])
+
+  @@map("quantity_certificates")
+}
+
+model TransferVariance {
+  id             String           @id @default(cuid())
+  transferId     String           @unique
+  bolVolume      Float?           // Bill of Lading volume
+  shoreVolume    Float            // Shore meter received
+  shipVolume     Float            // Ship figure discharged
+  variancePct    Float
+  category       VarianceCategory?
+  explanation    String?
+  resolvedBy     String?
+  resolvedAt     DateTime?
+  createdAt      DateTime         @default(now())
+
+  transfer       TransferRecord @relation(fields: [transferId], references: [id])
+
+  @@map("transfer_variances")
+}
+
+// ============================================================
+// COMMUNICATION
+// ============================================================
+
+model Communication {
+  id         String   @id @default(cuid())
+  transferId String
+  userId     String
+  message    String
+  timestamp  DateTime @default(now())
+
+  transfer   TransferRecord @relation(fields: [transferId], references: [id])
+  user       User           @relation(fields: [userId], references: [id])
+
+  @@index([transferId, timestamp])
+  @@map("communications")
+}
+
+// ============================================================
+// TEMPLATES
+// ============================================================
+
+model TransferTemplate {
+  id             String       @id @default(cuid())
+  name           String
+  terminalId     String
+  type           TransferType
+  productId      String?
+  sourceAsset    String?
+  destAsset      String?
+  routeConfig    Json?
+  targetFlowRate Float?
+  version        Int          @default(1)
+  lastUsedAt     DateTime?
+  totalUses      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  terminal       Terminal @relation(fields: [terminalId], references: [id])
+
+  @@map("transfer_templates")
+}
