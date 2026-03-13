@@ -266,6 +266,52 @@ export default function TransferDetailPage() {
         </div>
       )}
 
+      {/* Sub-page navigation */}
+      <div className="bg-white rounded-xl border border-border p-4">
+        <p className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wider">Documents & Compliance</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Link
+            href={`/transfers/${params.id}/isgott`}
+            className="flex items-center gap-3 p-3 rounded-lg border border-input hover:bg-muted/50 transition-colors group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <Shield className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">ISGOTT Checklist</p>
+              <p className="text-xs text-muted-foreground">Ship/Shore Safety</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </Link>
+          <Link
+            href={`/transfers/${params.id}/certificate`}
+            className="flex items-center gap-3 p-3 rounded-lg border border-input hover:bg-muted/50 transition-colors group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+              <FileText className="w-4 h-4 text-blue-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">Quantity Certificate</p>
+              <p className="text-xs text-muted-foreground">Volume & Reconciliation</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </Link>
+          <Link
+            href={`/transfers/${params.id}/closure`}
+            className="flex items-center gap-3 p-3 rounded-lg border border-input hover:bg-muted/50 transition-colors group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
+              <CheckCircle2 className="w-4 h-4 text-slate-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">Transfer Closure</p>
+              <p className="text-xs text-muted-foreground">3-Way Reconciliation</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </Link>
+        </div>
+      </div>
+
       {/* Main content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column — Info + Controls */}
