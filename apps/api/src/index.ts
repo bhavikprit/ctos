@@ -9,6 +9,7 @@ import { tankRouter } from "./routes/tanks";
 import { transferRouter } from "./routes/transfers";
 import { productRouter } from "./routes/products";
 import { berthRouter } from "./routes/berths";
+import { terminalRouter } from "./routes/terminals";
 import { errorHandler } from "./middleware/errorHandler";
 
 dotenv.config();
@@ -37,6 +38,7 @@ app.use("/api/v1/tanks", tankRouter);
 app.use("/api/v1/transfers", transferRouter);
 app.use("/api/v1/products", productRouter);
 app.use("/api/v1/berths", berthRouter);
+app.use("/api/v1/terminals", terminalRouter);
 
 // Error handler (must be last)
 app.use(errorHandler);

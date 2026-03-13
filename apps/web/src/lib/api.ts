@@ -311,6 +311,48 @@ class ApiClient {
   async updateSettings(data: any) {
     return this.request<any>("/settings", { method: "PATCH", body: data });
   }
+
+  // Terminals
+  async getTerminals() {
+    return this.request<any[]>("/terminals");
+  }
+
+  async getTerminal(id: string) {
+    return this.request<any>(`/terminals/${id}`);
+  }
+
+  async createTerminal(data: any) {
+    return this.request<any>("/terminals", { method: "POST", body: data });
+  }
+
+  async updateTerminal(id: string, data: any) {
+    return this.request<any>(`/terminals/${id}`, { method: "PATCH", body: data });
+  }
+
+  async deleteTerminal(id: string) {
+    return this.request<void>(`/terminals/${id}`, { method: "DELETE" });
+  }
+
+  // Terminal infrastructure
+  async addTankToTerminal(terminalId: string, data: any) {
+    return this.request<any>(`/terminals/${terminalId}/tanks`, { method: "POST", body: data });
+  }
+
+  async addPipelineToTerminal(terminalId: string, data: any) {
+    return this.request<any>(`/terminals/${terminalId}/pipelines`, { method: "POST", body: data });
+  }
+
+  async addBerthToTerminal(terminalId: string, data: any) {
+    return this.request<any>(`/terminals/${terminalId}/berths`, { method: "POST", body: data });
+  }
+
+  async addPumpToTerminal(terminalId: string, data: any) {
+    return this.request<any>(`/terminals/${terminalId}/pumps`, { method: "POST", body: data });
+  }
+
+  async addValveToTerminal(terminalId: string, data: any) {
+    return this.request<any>(`/terminals/${terminalId}/valves`, { method: "POST", body: data });
+  }
 }
 
 export const api = new ApiClient(API_BASE_URL);

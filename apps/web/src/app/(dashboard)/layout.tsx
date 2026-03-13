@@ -22,6 +22,7 @@ import {
   History,
   Anchor,
   ShieldCheck,
+  Building2,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { href: "/berths", label: "Berths", icon: Anchor },
   { href: "/products", label: "Products", icon: Package },
   { href: "/safety", label: "Safety / SDS", icon: ShieldCheck },
+  { href: "/terminals", label: "Terminals", icon: Building2 },
   { href: "/diagram", label: "Diagram", icon: GitBranch },
   { href: "/reports", label: "Reports", icon: FileBarChart2 },
   { href: "/activity", label: "Activity", icon: History },
