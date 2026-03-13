@@ -18,6 +18,9 @@ import {
   Waves,
   User,
   FileBarChart2,
+  Package,
+  History,
+  Anchor,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -25,8 +28,11 @@ const NAV_ITEMS = [
   { href: "/vessels", label: "Vessel Calls", icon: Ship },
   { href: "/transfers", label: "Transfers", icon: ArrowRightLeft },
   { href: "/tanks", label: "Tanks", icon: Cylinder },
+  { href: "/berths", label: "Berths", icon: Anchor },
+  { href: "/products", label: "Products", icon: Package },
   { href: "/diagram", label: "Diagram", icon: GitBranch },
   { href: "/reports", label: "Reports", icon: FileBarChart2 },
+  { href: "/activity", label: "Activity", icon: History },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
