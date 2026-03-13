@@ -17,6 +17,7 @@ import {
   Bell,
   Waves,
   User,
+  FileBarChart2,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { href: "/transfers", label: "Transfers", icon: ArrowRightLeft },
   { href: "/tanks", label: "Tanks", icon: Cylinder },
   { href: "/diagram", label: "Diagram", icon: GitBranch },
+  { href: "/reports", label: "Reports", icon: FileBarChart2 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
