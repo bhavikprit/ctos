@@ -269,7 +269,20 @@ export default function TransferDetailPage() {
       {/* Sub-page navigation */}
       <div className="bg-white rounded-xl border border-border p-4">
         <p className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wider">Documents & Compliance</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <Link
+            href={`/transfers/${params.id}/diagram`}
+            className="flex items-center gap-3 p-3 rounded-lg border border-input hover:bg-muted/50 transition-colors group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+              <ArrowRightLeft className="w-4 h-4 text-blue-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">Diagram</p>
+              <p className="text-xs text-muted-foreground">Flow Visualization</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </Link>
           <Link
             href={`/transfers/${params.id}/isgott`}
             className="flex items-center gap-3 p-3 rounded-lg border border-input hover:bg-muted/50 transition-colors group"
