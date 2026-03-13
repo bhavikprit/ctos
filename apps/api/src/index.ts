@@ -7,6 +7,8 @@ import { vesselCallRouter } from "./routes/vesselCalls";
 import { parcelRouter } from "./routes/parcels";
 import { tankRouter } from "./routes/tanks";
 import { transferRouter } from "./routes/transfers";
+import { productRouter } from "./routes/products";
+import { berthRouter } from "./routes/berths";
 import { errorHandler } from "./middleware/errorHandler";
 
 dotenv.config();
@@ -33,6 +35,8 @@ app.use("/api/v1/vessel-calls", vesselCallRouter);
 app.use("/api/v1/parcels", parcelRouter);
 app.use("/api/v1/tanks", tankRouter);
 app.use("/api/v1/transfers", transferRouter);
+app.use("/api/v1/products", productRouter);
+app.use("/api/v1/berths", berthRouter);
 
 // Error handler (must be last)
 app.use(errorHandler);

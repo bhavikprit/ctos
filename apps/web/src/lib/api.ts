@@ -248,6 +248,69 @@ class ApiClient {
       body: data,
     });
   }
+
+  // Products
+  async getProducts() {
+    return this.request<any[]>("/products");
+  }
+
+  async getProduct(id: string) {
+    return this.request<any>(`/products/${id}`);
+  }
+
+  async createProduct(data: any) {
+    return this.request<any>("/products", { method: "POST", body: data });
+  }
+
+  async updateProduct(id: string, data: any) {
+    return this.request<any>(`/products/${id}`, { method: "PATCH", body: data });
+  }
+
+  async deleteProduct(id: string) {
+    return this.request<void>(`/products/${id}`, { method: "DELETE" });
+  }
+
+  // Berths
+  async getBerths() {
+    return this.request<any[]>("/berths");
+  }
+
+  async getBerth(id: string) {
+    return this.request<any>(`/berths/${id}`);
+  }
+
+  // Activity
+  async getActivityLog(params?: Record<string, string>) {
+    const query = params ? `?${new URLSearchParams(params)}` : "";
+    return this.request<any[]>(`/activity${query}`);
+  }
+
+  // Dashboard
+  async getDashboardStats() {
+    return this.request<any>("/dashboard/stats");
+  }
+
+  // Notifications
+  async getNotifications() {
+    return this.request<any[]>("/notifications");
+  }
+
+  async markNotificationRead(id: string) {
+    return this.request<void>(`/notifications/${id}/read`, { method: "POST" });
+  }
+
+  async markAllNotificationsRead() {
+    return this.request<void>("/notifications/read-all", { method: "POST" });
+  }
+
+  // Settings
+  async getSettings() {
+    return this.request<any>("/settings");
+  }
+
+  async updateSettings(data: any) {
+    return this.request<any>("/settings", { method: "PATCH", body: data });
+  }
 }
 
 export const api = new ApiClient(API_BASE_URL);
