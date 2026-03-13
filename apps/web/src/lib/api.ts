@@ -58,6 +58,10 @@ class ApiClient {
     return this.request<{ user: any }>("/auth/me");
   }
 
+  async getUsers() {
+    return this.request<any[]>("/auth/users");
+  }
+
   // Vessel Calls
   async getVesselCalls(params?: Record<string, string>) {
     const query = params ? `?${new URLSearchParams(params)}` : "";

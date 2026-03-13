@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { Cylinder, Droplets, AlertTriangle, CheckCircle2, Wrench, Ban } from "lucide-react";
 
@@ -67,9 +68,10 @@ export default function TanksPage() {
             const products = tank.compatibleProducts?.map((tp: any) => tp.product.name) || [];
 
             return (
-              <div
+              <Link
                 key={tank.id}
-                className="bg-white rounded-xl border border-border p-5 hover:shadow-md transition-shadow"
+                href={`/tanks/${tank.id}`}
+                className="bg-white rounded-xl border border-border p-5 hover:shadow-md transition-shadow block"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -155,7 +157,7 @@ export default function TanksPage() {
                     </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
