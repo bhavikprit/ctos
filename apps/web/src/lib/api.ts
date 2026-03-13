@@ -81,6 +81,10 @@ class ApiClient {
     return this.request<any[]>(`/vessel-calls/${vesselCallId}/parcels`);
   }
 
+  async getVesselCallParcels(vesselCallId: string) {
+    return this.getParcels(vesselCallId);
+  }
+
   async createParcel(vesselCallId: string, data: any) {
     return this.request<any>(`/vessel-calls/${vesselCallId}/parcels`, { method: "POST", body: data });
   }
@@ -139,10 +143,11 @@ class ApiClient {
   }
 
   // Flow Rate
-  async recordFlowRate(transferId: string, data: { flowRate: number; segmentId?: string }) {
+  async recordFlowRate(transferId: string, flowRateOrData: number | { flowRate: number; segmentId?: string }) {
+    const body = typeof flowRateOrData === "number" ? { flowRate: flowRateOrData } : flowRateOrData;
     return this.request<any>(`/transfers/${transferId}/flow-rate`, {
       method: "POST",
-      body: data,
+      body,
     });
   }
 
@@ -196,10 +201,10 @@ class ApiClient {
   }
 
   // Communications
-  async addCommunication(transferId: string, message: string) {
+  async addCommunication(transferId: string, data: any) {
     return this.request<any>(`/transfers/${transferId}/communications`, {
       method: "POST",
-      body: { message },
+      body: typeof data === "string" ? { message: data } : data,
     });
   }
 
